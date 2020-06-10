@@ -16,17 +16,18 @@ import (
 )
 
 func InsertIntoMongo(dumpPath string) {
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
+	cancel()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to connect to mongodb: %s", err)
 	}
 
 	db := client.Database("ourcampaigns")
 
 	fileInfos, err := ioutil.ReadDir(dumpPath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to read files from dump folder: %s", err)
 	}
 
 	for _, fileInfo := range fileInfos {
@@ -35,7 +36,7 @@ func InsertIntoMongo(dumpPath string) {
 
 		file, err := os.Open(path.Join(dumpPath, fileInfo.Name()))
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("failed to open file %s: %s", file.Name(), err)
 		}
 
 		scanner := bufio.NewScanner(file)
@@ -56,10 +57,11 @@ func InsertIntoMongo(dumpPath string) {
 			docs = append(docs, doc)
 		}
 
-		ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		_, err = col.InsertMany(ctx, docs)
+		cancel()
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("failed to insert into %s: %s", col.Name(), err)
 		}
 
 		file.Close()

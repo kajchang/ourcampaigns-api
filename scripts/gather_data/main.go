@@ -14,14 +14,14 @@ var DB_NAMES []string = []string{"User", "Container", "Race", "RaceMember", "Can
 func DownloadSiteData(dumpPath string) {
 	err := os.Mkdir(dumpPath, 0755)
 	if err != nil && !os.IsExist(err) {
-		log.Fatal(err)
+		log.Fatalf("failed to create dump folder: %s", err)
 	}
 
 	for _, dbName := range DB_NAMES {
 		for page := 0; true; page++ {
 			res, err := http.Get(fmt.Sprintf("https://www.ourcampaigns.com/cgi-bin/datadownload.cgi?WhichDB=%s&WhichPage=%d", dbName, page))
 			if err != nil {
-				log.Fatal(err)
+				log.Fatalf("failed to request from ourcampaigns.com: %s", err)
 			}
 
 			buf := new(bytes.Buffer)
