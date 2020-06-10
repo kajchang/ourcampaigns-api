@@ -15,6 +15,20 @@ import (
 	"github.com/kajchang/ourcampaigns-api/api/scalars"
 )
 
+const documentLimit = 1000
+
+var limitArg = &graphql.ArgumentConfig{
+	Type:         graphql.Int,
+	DefaultValue: documentLimit,
+	Description:  "Maximum number of documents to return",
+}
+
+var skipArg = &graphql.ArgumentConfig{
+	Type:         graphql.Int,
+	DefaultValue: 0,
+	Description:  "Number of documents to skip",
+}
+
 func BuildGraphQLSchema() graphql.Schema {
 	ctx := context.Background()
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
@@ -41,6 +55,8 @@ func BuildGraphQLSchema() graphql.Schema {
 		}
 
 		typeFields := make(graphql.Fields)
+		filterArgFields := make(graphql.InputObjectConfigFieldMap)
+		sortArgFields := make(graphql.InputObjectConfigFieldMap)
 		for k, v := range sampleDoc.Map() {
 			var fieldType graphql.Output
 
@@ -63,6 +79,12 @@ func BuildGraphQLSchema() graphql.Schema {
 			typeFields[k] = &graphql.Field{
 				Type: fieldType,
 			}
+			filterArgFields[k] = &graphql.InputObjectFieldConfig{
+				Type: fieldType,
+			}
+			sortArgFields[k] = &graphql.InputObjectFieldConfig{
+				Type: graphql.Int,
+			}
 		}
 
 		queryFields[col.Name()] = &graphql.Field{
@@ -72,12 +94,42 @@ func BuildGraphQLSchema() graphql.Schema {
 					Fields: typeFields,
 				},
 			)),
+			Args: graphql.FieldConfigArgument{
+				"filter": &graphql.ArgumentConfig{
+					Type: graphql.NewInputObject(
+						graphql.InputObjectConfig{
+							Name:   col.Name() + "FilterArgs",
+							Fields: filterArgFields,
+						},
+					),
+					DefaultValue: bson.M(nil),
+				},
+				"sort": &graphql.ArgumentConfig{
+					Type: graphql.NewInputObject(
+						graphql.InputObjectConfig{
+							Name:   col.Name() + "SortArgs",
+							Fields: sortArgFields,
+						},
+					),
+					DefaultValue: bson.M(nil),
+				},
+				"limit": limitArg,
+				"skip":  skipArg,
+			},
 			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 				ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 				defer cancel()
 
-				docLimit := int64(1000)
-				cur, err := col.Find(ctx, bson.M{}, &options.FindOptions{Limit: &docLimit})
+				limit := int64(params.Args["limit"].(int))
+				if limit > documentLimit {
+					limit = documentLimit
+				}
+				skip := int64(params.Args["skip"].(int))
+
+				filter := params.Args["filter"]
+				sort := params.Args["sort"]
+
+				cur, err := col.Find(ctx, filter, &options.FindOptions{Sort: sort, Skip: &skip, Limit: &limit})
 				if err != nil {
 					return nil, err
 				}

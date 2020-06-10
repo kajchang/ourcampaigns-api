@@ -8,7 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const defaultTimeFormat = time.RFC3339
+const timeFormat = time.RFC3339
 
 var MongoDate = graphql.NewScalar(graphql.ScalarConfig{
 	Name:        "MongoDate",
@@ -16,9 +16,9 @@ var MongoDate = graphql.NewScalar(graphql.ScalarConfig{
 	Serialize: func(value interface{}) interface{} {
 		switch value := value.(type) {
 		case primitive.DateTime:
-			return time.Unix(0, int64(value)).Format(defaultTimeFormat)
+			return time.Unix(0, int64(value)).Format(timeFormat)
 		case *primitive.DateTime:
-			return time.Unix(0, int64(*value)).Format(defaultTimeFormat)
+			return time.Unix(0, int64(*value)).Format(timeFormat)
 		default:
 			return nil
 		}
@@ -26,10 +26,10 @@ var MongoDate = graphql.NewScalar(graphql.ScalarConfig{
 	ParseValue: func(value interface{}) interface{} {
 		switch value := value.(type) {
 		case string:
-			d, _ := time.Parse(defaultTimeFormat, value)
+			d, _ := time.Parse(timeFormat, value)
 			return d
 		case *string:
-			d, _ := time.Parse(defaultTimeFormat, *value)
+			d, _ := time.Parse(timeFormat, *value)
 			return d
 		default:
 			return nil
@@ -38,7 +38,7 @@ var MongoDate = graphql.NewScalar(graphql.ScalarConfig{
 	ParseLiteral: func(valueAST ast.Value) interface{} {
 		switch valueAST := valueAST.(type) {
 		case *ast.StringValue:
-			d, _ := time.Parse(defaultTimeFormat, valueAST.Value)
+			d, _ := time.Parse(timeFormat, valueAST.Value)
 			return d
 		default:
 			return nil
