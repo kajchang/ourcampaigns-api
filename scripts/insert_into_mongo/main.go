@@ -74,6 +74,10 @@ func InsertIntoMongo(dumpPath string) {
 					doc[header] = d
 					continue
 				}
+				if value == "0000-00-00 00:00:00" {
+					doc[header] = time.Time{}
+					continue
+				}
 				doc[header] = value
 			}
 
