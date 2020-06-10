@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"log"
+	"time"
 
 	"github.com/friendsofgo/graphiql"
 	"github.com/gin-gonic/gin"
@@ -16,13 +18,14 @@ type query struct {
 }
 
 func buildGraphQLSchema() graphql.Schema {
-	client, err := mongo.Connect(nil, options.Client().ApplyURI("mongodb://localhost:27017"))
+	ctx := context.Background()
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
 	if err != nil {
 		log.Fatalf("failed to connect to mongodb: %s", err)
 	}
 
 	db := client.Database("ourcampaigns")
-	colNames, err := db.ListCollectionNames(nil, bson.M{})
+	colNames, err := db.ListCollectionNames(ctx, bson.M{})
 	if err != nil {
 		log.Fatalf("failed to list collections: %s", err)
 	}
@@ -33,7 +36,7 @@ func buildGraphQLSchema() graphql.Schema {
 
 		var sampleDoc bson.D
 
-		res := col.FindOne(nil, bson.M{})
+		res := col.FindOne(ctx, bson.M{})
 		err = res.Decode(&sampleDoc)
 		if err != nil {
 			log.Fatalf("error finding sample doc in %s collection: %s", col.Name(), err)
@@ -55,21 +58,20 @@ func buildGraphQLSchema() graphql.Schema {
 			)),
 			Description: col.Name(),
 			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-				if err != nil {
-					return nil, err
-				}
-				cur, err := col.Find(nil, bson.M{})
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+				defer cancel()
+				cur, err := col.Find(ctx, bson.M{})
 				if err != nil {
 					return nil, err
 				}
 
 				var res []map[string]interface{}
-				for cur.Next(nil) {
+				for cur.Next(ctx) {
 					var doc bson.D
 					cur.Decode(&doc)
 					res = append(res, doc.Map())
 				}
-				cur.Close(nil)
+				cur.Close(ctx)
 				return res, nil
 			},
 		}
