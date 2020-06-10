@@ -13,6 +13,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/kajchang/ourcampaigns-api/api/scalars"
 )
 
 type query struct {
@@ -60,7 +62,7 @@ func buildGraphQLSchema() graphql.Schema {
 			case float64:
 				fieldType = graphql.Float
 			case primitive.DateTime:
-				fieldType = graphql.DateTime
+				fieldType = scalars.MongoDate
 			case primitive.ObjectID:
 				fieldType = graphql.ID
 			}
@@ -79,7 +81,9 @@ func buildGraphQLSchema() graphql.Schema {
 			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 				ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 				defer cancel()
-				cur, err := col.Find(ctx, bson.M{})
+
+				docLimit := int64(1000)
+				cur, err := col.Find(ctx, bson.M{}, &options.FindOptions{Limit: &docLimit})
 				if err != nil {
 					return nil, err
 				}
