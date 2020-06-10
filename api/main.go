@@ -5,6 +5,8 @@ import (
 	"log"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"github.com/friendsofgo/graphiql"
 	"github.com/gin-gonic/gin"
 	"github.com/graphql-go/graphql"
@@ -43,9 +45,27 @@ func buildGraphQLSchema() graphql.Schema {
 		}
 
 		typeFields := make(graphql.Fields)
-		for k := range sampleDoc.Map() {
+		for k, v := range sampleDoc.Map() {
+			var fieldType graphql.Output
+
+			switch t := v.(type) {
+			default:
+				log.Fatalf("unknown type in mongodb: %s", t)
+			case string:
+				fieldType = graphql.String
+			case int32:
+				fieldType = graphql.Int
+			case uint8:
+				fieldType = graphql.Int
+			case float64:
+				fieldType = graphql.Float
+			case primitive.DateTime:
+				fieldType = graphql.DateTime
+			case primitive.ObjectID:
+				fieldType = graphql.ID
+			}
 			typeFields[k] = &graphql.Field{
-				Type: graphql.String,
+				Type: fieldType,
 			}
 		}
 
@@ -56,7 +76,6 @@ func buildGraphQLSchema() graphql.Schema {
 					Fields: typeFields,
 				},
 			)),
-			Description: col.Name(),
 			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 				ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 				defer cancel()

@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -47,11 +48,28 @@ func InsertIntoMongo(dumpPath string) {
 		docs := make([]interface{}, 0)
 
 		for scanner.Scan() {
-			doc := make(map[string]string)
+			doc := make(map[string]interface{})
 
 			values := strings.Split(scanner.Text(), "\t")
-			for i := range headers {
-				doc[headers[i]] = values[i]
+			for j := range headers {
+				header := headers[j]
+				value := values[j]
+				i, err := strconv.Atoi(value)
+				if err == nil {
+					doc[header] = i
+					continue
+				}
+				f, err := strconv.ParseFloat(value, 64)
+				if err == nil {
+					doc[header] = f
+					continue
+				}
+				d, err := time.Parse("2006-01-02 15:04:05", value)
+				if err == nil {
+					doc[header] = d
+					continue
+				}
+				doc[header] = value
 			}
 
 			docs = append(docs, doc)
