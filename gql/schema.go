@@ -3,6 +3,7 @@ package gql
 import (
 	"context"
 	"log"
+	"os"
 	"time"
 
 	"github.com/graphql-go/graphql"
@@ -31,7 +32,7 @@ var skipArg = &graphql.ArgumentConfig{
 
 func BuildGraphQLSchema() graphql.Schema {
 	ctx := context.Background()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("MONGODB_URI")))
 	if err != nil {
 		log.Fatalf("failed to connect to mongodb: %s", err)
 	}

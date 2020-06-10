@@ -1,12 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"os"
 
 	"github.com/friendsofgo/graphiql"
 	"github.com/gin-gonic/gin"
 	"github.com/graphql-go/graphql"
-	
+
 	"github.com/kajchang/ourcampaigns-api/api/gql"
 )
 
@@ -48,9 +50,18 @@ func handleGraphiQLRequest(c *gin.Context) {
 }
 
 func main() {
+	_, ok := os.LookupEnv("HEROKU")
+	if ok {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	r := gin.Default()
 
 	r.POST("/", handleGraphQLRequest)
 	r.GET("/graphiql", handleGraphiQLRequest)
-	r.Run()
+	port, ok := os.LookupEnv("PORT")
+	if !ok {
+		port = "8080"
+	}
+	r.Run(fmt.Sprintf(":%s", port))
 }
