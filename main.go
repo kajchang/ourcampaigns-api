@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/graphql-go/graphql"
 
-	"github.com/kajchang/ourcampaigns-api/api/gql"
+	"github.com/kajchang/ourcampaigns-api/gql"
 )
 
 type query struct {
