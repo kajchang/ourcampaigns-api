@@ -19,7 +19,7 @@ func DownloadSiteData(dumpPath string) {
 
 	for _, dbName := range DB_NAMES {
 		for page := 0; true; page++ {
-			res, err := http.Get(fmt.Sprintf("https://www.ourcampaigns.com/cgi-bin/datadownload.cgi?WhichDB=%s&WhichPage=%d", dbName, page))
+			res, err := http.Get(fmt.Sprintf("https://www.ourcampaigns.com/cgi-bin/datadownload.cgi?WhichDB=%s&WhichPage=%d&PerPage=100000", dbName, page))
 			if err != nil {
 				log.Fatalf("failed to request from ourcampaigns.com: %s", err)
 			}

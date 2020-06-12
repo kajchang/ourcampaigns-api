@@ -42,6 +42,10 @@ func InsertIntoMongo(dumpPath string) {
 
 		scanner := bufio.NewScanner(file)
 
+		const maxCapacity = 512 * 1024
+		buf := make([]byte, maxCapacity)
+		scanner.Buffer(buf, maxCapacity)
+
 		scanner.Scan()
 		headers := strings.Split(scanner.Text(), "\t")
 
@@ -49,7 +53,6 @@ func InsertIntoMongo(dumpPath string) {
 
 		for scanner.Scan() {
 			doc := make(map[string]interface{})
-
 			values := strings.Split(scanner.Text(), "\t")
 			for j := range headers {
 				header := headers[j]
