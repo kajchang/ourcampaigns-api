@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -13,8 +14,14 @@ import (
 )
 
 type query struct {
-	Query string `json:"query"`
+	Query     string                 `json:"query"`
+	Variables map[string]interface{} `json:"variables"`
 }
+type contextKey int
+
+const (
+	request contextKey = iota
+)
 
 var schema graphql.Schema = gql.BuildGraphQLSchema()
 
@@ -28,9 +35,13 @@ func handleGraphQLRequest(c *gin.Context) {
 		return
 	}
 
+	ctx := context.WithValue(context.Background(), request, c)
+
 	res := graphql.Do(graphql.Params{
-		Schema:        schema,
-		RequestString: q.Query,
+		Schema:         schema,
+		RequestString:  q.Query,
+		VariableValues: q.Variables,
+		Context:        ctx,
 	})
 
 	status := 200
