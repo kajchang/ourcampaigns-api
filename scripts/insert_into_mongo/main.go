@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -19,12 +20,27 @@ import (
 func InsertIntoMongo(dumpPath string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
-	cancel()
 	if err != nil {
 		log.Fatalf("failed to connect to mongodb: %s", err)
 	}
 
 	db := client.Database("ourcampaigns")
+
+	colNames, err := db.ListCollectionNames(ctx, bson.M{})
+	cancel()
+	if err != nil {
+		log.Fatalf("error listing collections: %s", err)
+	}
+	for _, colName := range colNames {
+		col := db.Collection(colName)
+		ctx = context.Background()
+		_, err = col.DeleteMany(ctx, bson.M{})
+		cancel()
+		if err != nil {
+			log.Fatalf("error deleting docs from %s: %s", colName, err)
+		}
+	}
+	cancel()
 
 	fileInfos, err := ioutil.ReadDir(dumpPath)
 	if err != nil {
